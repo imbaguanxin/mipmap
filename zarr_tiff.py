@@ -117,25 +117,25 @@ def main(config_path):
     # S5: 500-7000, 500 7000, 15-300
     with open(config_path, 'r') as f:
         configs = json.load(f)
-    print(f'mipmapping: {configs["section"]}')
-    raw_file = configs["section"]
+    section = configs['section']
+    raw_file = configs["zarr_file"]
     raw_ds = configs['raw_ds']
     now = datetime.now().strftime("%m%d.%H.%M.%S")
-    output = f'/n/groups/htem/Segmentation/xg76/mipmap/mipmap/{now}_{section}_{z_start}_{z_end}'
+    output = configs['output_folder']# f'/n/groups/htem/Segmentation/xg76/mipmap/mipmap/{now}_{section}_{z_start}_{z_end}'
 
-    coord_begin = s['coord_begin']
-    coord_end = s['coord_end']
-    z_range = s['z_range']
-    scale_list = s['scale']
+    coord_begin = configs['coord_begin']
+    coord_end = configs['coord_end']
+    z_range = range(coord_begin[2], coord_end[2], configs['interval'])
+    scale_list = [configs['scale']]
     os.makedirs(output, exist_ok=True)
 
+    print(f'mipmapping: {configs["section"]}')
     cutout_ds = daisy.open_ds(raw_file, raw_ds)
 
     for z in z_range:
         coord_begin[2] = z
-        coord_end[2] = coord_begin[2] + 1
+        coord_end[2] = z + 1
         print(f'coord begin: {coord_begin}')
-
         raw_img_list = get_ndarray_img_from_zarr(
             coord_begin=coord_begin, 
             coord_end=coord_end,
@@ -178,11 +178,9 @@ def test_mipmapping():
 
 
 if __name__ == "__main__":
-    if len(sys.argv) == 4:
-        sec = sys.argv[1]
-        z_s = int(sys.argv[2])
-        z_e = int(sys.argv[3])
-        main_origin(sec, z_s, z_e)
+    if len(sys.argv) == 2:
+        fpth = sys.argv[1]
+        main(fpth)
     else:
-        print('Something wrong with argument\n should be "section_num start_z end_z"')
+        print('Something wrong with argument\n should be a path of config file.')
     
